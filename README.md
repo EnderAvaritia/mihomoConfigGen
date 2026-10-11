@@ -61,7 +61,26 @@ mihomoConfigGen/
 
 ---
 
-## 重新构建 / 测试
+## 修改默认模板 / 重新构建 / 测试
+
+### 换默认模板后要重建 index.html（重要）
+
+`index.html` 里的模板是**构建时内嵌**的（见下方"为什么不直接手写"）。
+所以改完 `template.yaml` 后**必须重建 `index.html`**，否则页面仍用旧模板：
+
+```bash
+node build/build.mjs      # 用新的 template.yaml 重新生成 index.html
+git add template.yaml index.html
+```
+
+- **Actions 方式部署（推荐）**：CI 每次 push 会自动跑 `build.mjs`，
+  所以只需提交 `template.yaml` 即可，线上页面会自动更新。
+- **本地双击打开 / 分支方式部署**：必须手动重建，并**同时提交 `template.yaml` 和 `index.html`**。
+- **模板硬性要求**：必须含顶层键 `proxy-providers:`，否则生成时会报错无法注入；
+  模板有 `&p` 锚点则用 `<<: *p` 继承，没有则自动内联完整 provider 属性。
+- **终端用户无需改仓库**：页面上的「上传自定义模板」可在自己浏览器里临时覆盖内置模板。
+
+### 构建 / 测试命令
 
 ```bash
 node build/build.mjs     # 重新生成 index.html
