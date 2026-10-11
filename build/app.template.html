@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订阅配置生成器 · Clash / mihomo Provider</title>
+<style>
+  :root{
+    --bg:#0b0f17;
+    --card:#121a29;
+    --card-2:#0e1520;
+    --border:#233048;
+    --border-strong:#33425e;
+    --text:#e8eef8;
+    --muted:#8a97ab;
+    --muted-2:#66748a;
+    --accent:#6d8bff;
+    --accent-2:#a678ff;
+    --danger:#ff6b81;
+    --ok:#3ddc97;
+    --warn:#ffb454;
+    --radius:14px;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--sans);
+    color:var(--text);
+    background:
+      radial-gradient(1100px 560px at 100% -12%, rgba(166,120,255,.16), transparent 60%),
+      radial-gradient(900px 520px at -12% 0%, rgba(109,139,255,.18), transparent 55%),
+      var(--bg);
+    min-height:100vh;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:920px;margin:0 auto;padding:40px 20px 72px}
+  header.app-header{margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand-mark{
+    width:36px;height:36px;border-radius:10px;flex:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 6px 20px rgba(109,139,255,.35);
+    display:grid;place-items:center;font-weight:700;font-size:17px;color:#0b0f17;
+  }
+  h1{font-size:22px;margin:0;letter-spacing:.2px}
+  .subtitle{color:var(--muted);margin:10px 0 0;font-size:13.5px}
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px;
+    margin-bottom:18px;
+    box-shadow:0 1px 0 rgba(255,255,255,.02) inset, 0 12px 30px -18px rgba(0,0,0,.75);
+  }
+  .card-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+  .card-head h2{font-size:14.5px;margin:0;font-weight:600;letter-spacing:.3px}
+  .card-head .idx{
+    font-family:var(--mono);font-size:11px;color:var(--accent);
+    border:1px solid var(--border-strong);border-radius:6px;padding:1px 7px;
+  }
+  .card-head .hint{color:var(--muted-2);font-size:12px;margin-left:auto}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  input[type=text],input[type=url],textarea{
+    width:100%;background:#0a111c;border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:11px 13px;font-size:13.5px;font-family:var(--sans);
+    transition:border-color .15s, box-shadow .15s, background .15s;outline:none;
+  }
+  input::placeholder,textarea::placeholder{color:var(--muted-2)}
+  input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,139,255,.18)}
+  .seg{display:inline-flex;background:#0a111c;border:1px solid var(--border);border-radius:11px;padding:4px;gap:4px;flex-wrap:wrap}
+  .seg button{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    font-family:var(--sans);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .seg button.active{background:linear-gradient(135deg,rgba(109,139,255,.22),rgba(166,120,255,.22));color:var(--text);box-shadow:0 0 0 1px var(--border-strong) inset}
+  .seg button:hover:not(.active){color:var(--text)}
+  .row-base{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .provider-list{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+  .provider{
+    display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:10px;align-items:center;
+    background:#0a111c;border:1px solid var(--border);border-radius:12px;padding:12px;
+  }
+  .provider input{background:#060c15}
+  .provider .name-input{font-family:var(--mono);font-size:12.5px}
+  .icon-btn{
+    appearance:none;border:1px solid var(--border);background:#0a111c;color:var(--muted);
+    width:38px;height:38px;border-radius:10px;cursor:pointer;display:grid;place-items:center;
+    transition:border-color .15s,color .15s,background .15s;flex:none;
+  }
+  .icon-btn:hover{border-color:var(--danger);color:var(--danger);background:rgba(255,107,129,.08)}
+  .icon-btn svg{width:16px;height:16px}
+  .btn{
+    appearance:none;border:1px solid var(--border-strong);background:#0a111c;color:var(--text);
+    font-family:var(--sans);font-size:13.5px;font-weight:600;padding:11px 18px;border-radius:11px;
+    cursor:pointer;transition:transform .08s,border-color .15s,background .15s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--accent)}
+  .btn:active{transform:translateY(1px)}
+  .btn svg{width:15px;height:15px}
+  .btn-primary{
+    border:0;color:#070b12;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 8px 22px -10px rgba(109,139,255,.8);
+  }
+  .btn-ghost{background:transparent}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .spacer{flex:1}
+  .file-drop{
+    margin-top:12px;border:1px dashed var(--border-strong);border-radius:11px;padding:14px;
+    color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:12px;justify-content:space-between;
+    cursor:pointer;
+  }
+  .file-drop.has-file{border-style:solid;border-color:var(--ok);color:var(--text)}
+  .out-wrap{margin-top:6px}
+  textarea#output{
+    font-family:var(--mono);font-size:12px;line-height:1.6;min-height:280px;resize:vertical;
+    white-space:pre;overflow:auto;background:#060c15;
+  }
+  .stat{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .msg{border-radius:10px;padding:10px 13px;font-size:12.5px;margin-top:12px;display:none}
+  .msg.error{display:block;background:rgba(255,107,129,.1);border:1px solid rgba(255,107,129,.4);color:#ffc2cb}
+  .msg.ok{display:block;background:rgba(61,220,151,.1);border:1px solid rgba(61,220,151,.35);color:#9ff0cd}
+  .msg.warn{display:block;background:rgba(255,180,84,.1);border:1px solid rgba(255,180,84,.35);color:#ffd9a1}
+  .note{color:var(--muted-2);font-size:12px;margin-top:10px}
+  code{font-family:var(--mono);font-size:11.5px;background:#0a111c;border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+  footer{color:var(--muted-2);font-size:12px;margin-top:26px;text-align:center;line-height:1.8}
+  .badge{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  @media (max-width:640px){
+    .provider{grid-template-columns:1fr auto}
+    .provider .name-input{grid-column:1 / -1}
+    .provider .url-input{grid-column:1 / 2}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <h1>订阅配置生成器</h1>
+    </div>
+    <p class="subtitle">
+      填入订阅链接，一键把链接注入 <code>proxy-providers</code>，导出可直接使用的 Clash / mihomo 配置。
+      全程本地运行，不联网、不上传任何数据。
+    </p>
+  </header>
+
+  <main>
+    <!-- 1. 模板 -->
+    <section class="card">
+      <div class="card-head">
+        <span class="idx">01</span>
+        <h2>配置模板</h2>
+        <span class="hint" id="tpl-hint"></span>
+      </div>
+      <div class="seg" role="tablist" aria-label="模板来源">
+        <button type="button" id="tpl-builtin" class="active">使用内置模板</button>
+        <button type="button" id="tpl-upload">上传自定义模板</button>
+      </div>
+      <div class="file-drop" id="file-drop" style="display:none">
+        <span id="file-label">点击选择一份 .yaml / .yml 文件，替换其中的 proxy-providers 块</span>
+        <input type="file" id="file-input" accept=".yaml,.yml,.txt,text/yaml,text/plain" style="display:none">
+        <button type="button" class="btn btn-ghost" id="file-btn">选择文件</button>
+      </div>
+      <p class="note">
+        内置模板即本工具同目录下的 <code>template.yaml</code>（你的原始配置）。
+        模板里必须存在顶层键 <code>proxy-providers:</code>，否则无法注入。
+      </p>
+    </section>
+
+    <!-- 2. 订阅列表 -->
+    <section class="card">
+      <div class="card-head">
+        <span class="idx">02</span>
+        <h2>订阅列表</h2>
+        <span class="hint">名称不可重复 · 每行一条订阅</span>
+      </div>
+      <div class="provider-list" id="provider-list"></div>
+      <div class="row-base">
+        <button type="button" class="btn" id="add-provider">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          添加订阅
+        </button>
+        <span class="spacer"></span>
+        <span class="stat" id="provider-count">0 条</span>
+      </div>
+    </section>
+
+    <!-- 3. 生成 -->
+    <section class="card">
+      <div class="card-head">
+        <span class="idx">03</span>
+        <h2>生成与导出</h2>
+      </div>
+      <div class="toolbar">
+        <div style="flex:1;min-width:200px">
+          <label for="filename">输出文件名</label>
+          <input type="text" id="filename" value="config.yaml" spellcheck="false">
+        </div>
+        <div style="align-self:flex-end">
+          <button type="button" class="btn btn-primary" id="generate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+            生成配置
+          </button>
+        </div>
+      </div>
+      <div id="msg" class="msg"></div>
+      <div class="out-wrap">
+        <div class="toolbar" style="margin:16px 0 8px">
+          <span class="stat" id="out-stat">尚未生成</span>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-ghost" id="copy" disabled>复制</button>
+          <button type="button" class="btn" id="download" disabled>下载</button>
+        </div>
+        <textarea id="output" readonly spellcheck="false" placeholder="生成后的完整配置会显示在这里…"></textarea>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="badge"><span class="dot"></span> 纯前端 · 无后端 · 无网络请求</div>
+    <div>订阅链接会原样写入 <code>proxy-providers[].url</code>，由客户端在运行时自行拉取。</div>
+  </footer>
+</div>
+
+<script type="text/plain" id="builtin-template">__BUILTIN_TEMPLATE__</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+
+  var builtinTemplate = document.getElementById("builtin-template").textContent;
+  builtinTemplate = builtinTemplate.replace(/^\r?\n/, "").replace(/\r?\n$/, "");
+
+  /*__CORE__*/
+
+  // ---- 状态 ----
+  var idSeq = 0;
+  var providers = [];
+  var tplMode = "builtin";
+  var uploadedTemplate = null;
+  var lastOutput = "";
+
+  // ---- 模板来源 ----
+  function currentTemplate() {
+    return tplMode === "upload" ? uploadedTemplate : builtinTemplate;
+  }
+
+  function setMode(mode) {
+    tplMode = mode;
+    $("#tpl-builtin").classList.toggle("active", mode === "builtin");
+    $("#tpl-upload").classList.toggle("active", mode === "upload");
+    $("#file-drop").style.display = mode === "upload" ? "flex" : "none";
+    updateTplHint();
+  }
+
+  function updateTplHint() {
+    var hint = $("#tpl-hint");
+    if (tplMode === "upload" && uploadedTemplate) {
+      hint.textContent = "已载入自定义模板 (" + countLines(uploadedTemplate) + " 行)";
+    } else if (tplMode === "upload") {
+      hint.textContent = "尚未选择文件";
+    } else {
+      hint.textContent = "内置 · " + countLines(builtinTemplate) + " 行";
+    }
+  }
+
+  // ---- 订阅列表渲染 ----
+  function addProvider(name, url) {
+    providers.push({ id: ++idSeq, name: name || "", url: url || "" });
+    renderProviders();
+  }
+
+  function removeProvider(id) {
+    providers = providers.filter(function (p) { return p.id !== id; });
+    renderProviders();
+  }
+
+  var TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
+
+  function renderProviders() {
+    var list = $("#provider-list");
+    list.innerHTML = "";
+    providers.forEach(function (p, i) {
+      var row = document.createElement("div");
+      row.className = "provider";
+
+      var name = document.createElement("input");
+      name.type = "text";
+      name.className = "name-input";
+      name.placeholder = "名称，如 custom_name" + (i + 1);
+      name.value = p.name;
+      name.spellcheck = false;
+      name.addEventListener("input", function () { p.name = name.value; });
+
+      var url = document.createElement("input");
+      url.type = "url";
+      url.className = "url-input";
+      url.placeholder = "https://example.com/subscribe?token=xxx";
+      url.value = p.url;
+      url.spellcheck = false;
+      url.addEventListener("input", function () { p.url = url.value; });
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "icon-btn";
+      del.title = "删除";
+      del.innerHTML = TRASH_SVG;
+      del.addEventListener("click", function () { removeProvider(p.id); });
+
+      row.appendChild(name);
+      row.appendChild(url);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+    $("#provider-count").textContent = providers.length + " 条";
+  }
+
+  function showMsg(type, text) {
+    var el = $("#msg");
+    el.className = "msg " + type;
+    el.textContent = text;
+  }
+
+  function setOutputState(enabled) {
+    $("#copy").disabled = !enabled;
+    $("#download").disabled = !enabled;
+    if (!enabled) { $("#output").value = ""; $("#out-stat").textContent = "尚未生成"; }
+  }
+
+  // ---- 生成 ----
+  function onGenerate() {
+    var collected = validateProviders(providers);
+    if (collected.errs.length) {
+      showMsg("error", collected.errs.join(" "));
+      setOutputState(false);
+      return;
+    }
+
+    var template = currentTemplate();
+    if (!template) {
+      showMsg("error", "请先选择一份模板文件。");
+      setOutputState(false);
+      return;
+    }
+
+    var output;
+    try {
+      output = injectProviders(template, collected.list);
+    } catch (e) {
+      showMsg("error", e.message);
+      setOutputState(false);
+      return;
+    }
+
+    lastOutput = output;
+    $("#output").value = output;
+    setOutputState(true);
+
+    var warnings = [];
+    collected.list.forEach(function (p) {
+      if (!/^https?:\/\//i.test(p.url)) { warnings.push("链接 " + p.name + " 不是 http(s) 开头"); }
+    });
+    var stat = collected.list.length + " 条订阅 · " + countLines(output) + " 行";
+    if (warnings.length) {
+      showMsg("warn", "已生成（" + stat + "）。注意：" + warnings.join("；") + "。");
+    } else {
+      showMsg("ok", "已生成 · " + stat + "。");
+    }
+    $("#out-stat").textContent = stat;
+  }
+
+  // ---- 下载 / 复制 ----
+  function onDownload() {
+    if (!lastOutput) { return; }
+    var name = ($("#filename").value || "config.yaml").trim() || "config.yaml";
+    var blob = new Blob([lastOutput], { type: "text/yaml;charset=utf-8" });
+    var href = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(href); }, 1500);
+  }
+
+  function onCopy() {
+    if (!lastOutput) { return; }
+    var done = function () { flashCopy("已复制"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastOutput).then(done, function () { legacyCopy(done); });
+    } else {
+      legacyCopy(done);
+    }
+  }
+  function legacyCopy(done) {
+    var ta = $("#output");
+    ta.removeAttribute("readonly");
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { /* ignore */ }
+    ta.setAttribute("readonly", "readonly");
+    if (window.getSelection) { window.getSelection().removeAllRanges(); }
+  }
+  function flashCopy(text) {
+    var btn = $("#copy");
+    var old = btn.textContent;
+    btn.textContent = text;
+    setTimeout(function () { btn.textContent = old; }, 1200);
+  }
+
+  // ---- 文件上传 ----
+  function onFile(ev) {
+    var file = ev.target.files && ev.target.files[0];
+    if (!file) { return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      uploadedTemplate = String(reader.result);
+      $("#file-drop").classList.add("has-file");
+      $("#file-label").textContent = "已载入：" + file.name + "（" + countLines(uploadedTemplate) + " 行）";
+      updateTplHint();
+    };
+    reader.readAsText(file);
+  }
+
+  // ---- 事件绑定 ----
+  $("#tpl-builtin").addEventListener("click", function () { setMode("builtin"); });
+  $("#tpl-upload").addEventListener("click", function () { setMode("upload"); });
+  $("#file-btn").addEventListener("click", function (e) { e.stopPropagation(); $("#file-input").click(); });
+  $("#file-drop").addEventListener("click", function () { $("#file-input").click(); });
+  $("#file-input").addEventListener("change", onFile);
+  $("#add-provider").addEventListener("click", function () { addProvider("custom_name" + (providers.length + 1), ""); });
+  $("#generate").addEventListener("click", onGenerate);
+  $("#download").addEventListener("click", onDownload);
+  $("#copy").addEventListener("click", onCopy);
+
+  // ---- 初始化 ----
+  addProvider("custom_name1", "");
+  addProvider("custom_name2", "");
+  setMode("builtin");
+  setOutputState(false);
+})();
+</script>
+</body>
+</html>

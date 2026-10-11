@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订阅配置生成器 · Clash / mihomo Provider</title>
+<style>
+  :root{
+    --bg:#0b0f17;
+    --card:#121a29;
+    --card-2:#0e1520;
+    --border:#233048;
+    --border-strong:#33425e;
+    --text:#e8eef8;
+    --muted:#8a97ab;
+    --muted-2:#66748a;
+    --accent:#6d8bff;
+    --accent-2:#a678ff;
+    --danger:#ff6b81;
+    --ok:#3ddc97;
+    --warn:#ffb454;
+    --radius:14px;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--sans);
+    color:var(--text);
+    background:
+      radial-gradient(1100px 560px at 100% -12%, rgba(166,120,255,.16), transparent 60%),
+      radial-gradient(900px 520px at -12% 0%, rgba(109,139,255,.18), transparent 55%),
+      var(--bg);
+    min-height:100vh;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:920px;margin:0 auto;padding:40px 20px 72px}
+  header.app-header{margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand-mark{
+    width:36px;height:36px;border-radius:10px;flex:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 6px 20px rgba(109,139,255,.35);
+    display:grid;place-items:center;font-weight:700;font-size:17px;color:#0b0f17;
+  }
+  h1{font-size:22px;margin:0;letter-spacing:.2px}
+  .subtitle{color:var(--muted);margin:10px 0 0;font-size:13.5px}
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px;
+    margin-bottom:18px;
+    box-shadow:0 1px 0 rgba(255,255,255,.02) inset, 0 12px 30px -18px rgba(0,0,0,.75);
+  }
+  .card-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+  .card-head h2{font-size:14.5px;margin:0;font-weight:600;letter-spacing:.3px}
+  .card-head .idx{
+    font-family:var(--mono);font-size:11px;color:var(--accent);
+    border:1px solid var(--border-strong);border-radius:6px;padding:1px 7px;
+  }
+  .card-head .hint{color:var(--muted-2);font-size:12px;margin-left:auto}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  input[type=text],input[type=url],textarea{
+    width:100%;background:#0a111c;border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:11px 13px;font-size:13.5px;font-family:var(--sans);
+    transition:border-color .15s, box-shadow .15s, background .15s;outline:none;
+  }
+  input::placeholder,textarea::placeholder{color:var(--muted-2)}
+  input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,139,255,.18)}
+  .seg{display:inline-flex;background:#0a111c;border:1px solid var(--border);border-radius:11px;padding:4px;gap:4px;flex-wrap:wrap}
+  .seg button{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    font-family:var(--sans);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .seg button.active{background:linear-gradient(135deg,rgba(109,139,255,.22),rgba(166,120,255,.22));color:var(--text);box-shadow:0 0 0 1px var(--border-strong) inset}
+  .seg button:hover:not(.active){color:var(--text)}
+  .row-base{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .provider-list{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+  .provider{
+    display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:10px;align-items:center;
+    background:#0a111c;border:1px solid var(--border);border-radius:12px;padding:12px;
+  }
+  .provider input{background:#060c15}
+  .provider .name-input{font-family:var(--mono);font-size:12.5px}
+  .icon-btn{
+    appearance:none;border:1px solid var(--border);background:#0a111c;color:var(--muted);
+    width:38px;height:38px;border-radius:10px;cursor:pointer;display:grid;place-items:center;
+    transition:border-color .15s,color .15s,background .15s;flex:none;
+  }
+  .icon-btn:hover{border-color:var(--danger);color:var(--danger);background:rgba(255,107,129,.08)}
+  .icon-btn svg{width:16px;height:16px}
+  .btn{
+    appearance:none;border:1px solid var(--border-strong);background:#0a111c;color:var(--text);
+    font-family:var(--sans);font-size:13.5px;font-weight:600;padding:11px 18px;border-radius:11px;
+    cursor:pointer;transition:transform .08s,border-color .15s,background .15s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--accent)}
+  .btn:active{transform:translateY(1px)}
+  .btn svg{width:15px;height:15px}
+  .btn-primary{
+    border:0;color:#070b12;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 8px 22px -10px rgba(109,139,255,.8);
+  }
+  .btn-ghost{background:transparent}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .spacer{flex:1}
+  .file-drop{
+    margin-top:12px;border:1px dashed var(--border-strong);border-radius:11px;padding:14px;
+    color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:12px;justify-content:space-between;
+    cursor:pointer;
+  }
+  .file-drop.has-file{border-style:solid;border-color:var(--ok);color:var(--text)}
+  .out-wrap{margin-top:6px}
+  textarea#output{
+    font-family:var(--mono);font-size:12px;line-height:1.6;min-height:280px;resize:vertical;
+    white-space:pre;overflow:auto;background:#060c15;
+  }
+  .stat{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .msg{border-radius:10px;padding:10px 13px;font-size:12.5px;margin-top:12px;display:none}
+  .msg.error{display:block;background:rgba(255,107,129,.1);border:1px solid rgba(255,107,129,.4);color:#ffc2cb}
+  .msg.ok{display:block;background:rgba(61,220,151,.1);border:1px solid rgba(61,220,151,.35);color:#9ff0cd}
+  .msg.warn{display:block;background:rgba(255,180,84,.1);border:1px solid rgba(255,180,84,.35);color:#ffd9a1}
+  .note{color:var(--muted-2);font-size:12px;margin-top:10px}
+  code{font-family:var(--mono);font-size:11.5px;background:#0a111c;border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+  footer{color:var(--muted-2);font-size:12px;margin-top:26px;text-align:center;line-height:1.8}
+  .badge{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  @media (max-width:640px){
+    .provider{grid-template-columns:1fr auto}
+    .provider .name-input{grid-column:1 / -1}
+    .provider .url-input{grid-column:1 / 2}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <h1>订阅配置生成器</h1>
+    </div>
+    <p class="subtitle">
+      填入订阅链接，一键把链接注入 <code>proxy-providers</code>，导出可直接使用的 Clash / mihomo 配置。
+      全程本地运行，不联网、不上传任何数据。
+    </p>
+  </header>
+
+  <main>
+    <!-- 1. 模板 -->
+    <section class="card">
+      <div class="card-head">
+        <span class="idx">01</span>
+        <h2>配置模板</h2>
+        <span class="hint" id="tpl-hint"></span>
+      </div>
+      <div class="seg" role="tablist" aria-label="模板来源">
+        <button type="button" id="tpl-builtin" class="active">使用内置模板</button>
+        <button type="button" id="tpl-upload">上传自定义模板</button>
+      </div>
+      <div class="file-drop" id="file-drop" style="display:none">
+        <span id="file-label">点击选择一份 .yaml / .yml 文件，替换其中的 proxy-providers 块</span>
+        <input type="file" id="file-input" accept=".yaml,.yml,.txt,text/yaml,text/plain" style="display:none">
+        <button type="button" class="btn btn-ghost" id="file-btn">选择文件</button>
+      </div>
+      <p class="note">
+        内置模板即本工具同目录下的 <code>template.yaml</code>（你的原始配置）。
+        模板里必须存在顶层键 <code>proxy-providers:</code>，否则无法注入。
+      </p>
+    </section>
+
+    <!-- 2. 订阅列表 -->
+    <section class="card">
+      <div class="card-head">
+        <span class="idx">02</span>
+        <h2>订阅列表</h2>
+        <span class="hint">名称不可重复 · 每行一条订阅</span>
+      </div>
+      <div class="provider-list" id="provider-list"></div>
+      <div class="row-base">
+        <button type="button" class="btn" id="add-provider">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          添加订阅
+        </button>
+        <span class="spacer"></span>
+        <span class="stat" id="provider-count">0 条</span>
+      </div>
+    </section>
+
+    <!-- 3. 生成 -->
+    <section class="card">
+      <div class="card-head">
+        <span class="idx">03</span>
+        <h2>生成与导出</h2>
+      </div>
+      <div class="toolbar">
+        <div style="flex:1;min-width:200px">
+          <label for="filename">输出文件名</label>
+          <input type="text" id="filename" value="config.yaml" spellcheck="false">
+        </div>
+        <div style="align-self:flex-end">
+          <button type="button" class="btn btn-primary" id="generate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+            生成配置
+          </button>
+        </div>
+      </div>
+      <div id="msg" class="msg"></div>
+      <div class="out-wrap">
+        <div class="toolbar" style="margin:16px 0 8px">
+          <span class="stat" id="out-stat">尚未生成</span>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-ghost" id="copy" disabled>复制</button>
+          <button type="button" class="btn" id="download" disabled>下载</button>
+        </div>
+        <textarea id="output" readonly spellcheck="false" placeholder="生成后的完整配置会显示在这里…"></textarea>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="badge"><span class="dot"></span> 纯前端 · 无后端 · 无网络请求</div>
+    <div>订阅链接会原样写入 <code>proxy-providers[].url</code>，由客户端在运行时自行拉取。</div>
+  </footer>
+</div>
+
+<script type="text/plain" id="builtin-template">##143行处用于添加自己的代理链接，353行处可以添加自己的自定义规则,访问127.0.0.1:9090/ui面板控制
+mixed-port: 7890
+redir-port: 7891
+tproxy-port: 1536
+ipv6: true
+allow-lan: true
+unified-delay: true
+tcp-concurrent: true
+external-controller: 127.0.0.1:9090
+external-ui: ui
+external-ui-url: "https://github.com/MetaCubeX/yacd/archive/gh-pages.zip"
+
+find-process-mode: always
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: false
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain:
+    - "Mijia Cloud"
+    - "+.push.apple.com"
+
+tun:
+  enable: false
+  stack: system
+  device: meta
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
+  auto-route: true
+  auto-redirect: false
+  auto-detect-interface: true
+
+dns:
+  enable: true
+  ipv6: true
+  listen: 0.0.0.0:1053
+  respect-rules: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.0/15
+  fake-ip-filter:
+    - "*"
+    - "+.lan"
+    - "+.local"
+    - "+.market.xiaomi.com"
+    - localhost.ptlogin2.qq.com
+
+  direct-nameserver:
+  # 用于 direct 出口域名解析的 DNS 服务器
+    - 223.5.5.5 
+    - 180.76.76.76 
+    - 119.29.29.29 
+    - https://120.53.53.53/dns-query
+    - https://223.5.5.5/dns-query
+
+    
+  default-nameserver:
+  # 默认 DNS, 用于解析 DNS 服务器 的域名
+    - https://120.53.53.53/dns-query
+    - https://223.5.5.5/dns-query
+
+  proxy-server-nameserver:
+  # 代理节点域名解析服务器，仅用于解析代理节点的域名
+    - https://120.53.53.53/dns-query
+    - https://223.5.5.5/dns-query
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
+
+    
+  nameserver-policy:
+  # 指定域名查询的解析服务器，可使用 geosite
+    "rule-set:cn_domain,private_domain":
+        - https://120.53.53.53/dns-query
+        - https://223.5.5.5/dns-query
+      
+  nameserver:
+    #- 223.5.5.5 # 阿里DNS
+    #- 180.76.76.76 # 百度DNS
+    #- 119.29.29.29 # 腾讯DNS
+    #- 117.50.11.11 # ONE DNS拦截版 恶意网站拦截、广告过滤
+    #- 117.50.10.10 # ONE DNS纯净版 直接返回其真实的响应结果
+    #- 114.114.114.114 # 114DNS
+    
+    - 101.101.101.101
+    - 101.102.103.104
+    
+    - 8.8.8.8 # 谷歌DNS
+    - 1.1.1.1 # Cloudflare DNS
+    
+    - 2001:de4::101
+    - 2001:de4::102
+    - 2001:4860:4860::8888
+    - 2001:4860:4860::8844
+    - 2606:4700:4700::1111
+    - 2606:4700:4700::1001
+    
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
+    
+  fallback:
+    - tls://dns.rubyfish.cn:853
+    - tls://1.0.0.1:853
+    - tls://dns.google:853
+    - https://dns.rubyfish.cn/dns-query
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+ #fallback-filter:
+    #geoip: true # 默认
+    #ipcidr: # 在这个网段内的 IP 地址会被考虑为被污染的 IP
+      #- 240.0.0.0/4
+
+#这里是订阅更新和延迟测试相关
+#可以更改 proxy 指定的出站
+p: &p 
+    type: http
+    interval: 86400
+    proxy: 🗺️ 订阅更新
+    header: 
+        User-Agent:
+          - "clash-verge/v2.2.8"
+#          - "Clash/v1.18.0"
+#          - "mihomo/1.18.3"
+    health-check:
+        enable: true
+        url: http://www.gstatic.com/generate_204
+        interval: 18000
+        timeout: 2000
+        lazy: true
+        # expected-status: 204
+    exclude-filter: "剩余|链接|连接|域名|官网|网站|到期|过期|重置|邮箱"
+
+# url 里填写自己的订阅,名称不能重复,名字可以自己改
+proxy-providers:
+  custom_name1:
+    <<: *p
+    url: ""
+
+  custom_name2:
+    <<: *p
+    url: ""
+
+##########################################################################################################
+
+proxies:
+  - name: "DNS"
+    type: dns
+####应急使用的代理
+  - name: "TEMP"
+    type: socks5
+    server: 127.0.0.1
+    port: 1080
+
+proxy-groups:
+
+  - name: 🚀 节点选择
+    type: select
+    proxies: [♻️ 自动选择,🚀 手动切换,⚖️ 负载均衡,DIRECT,REJECT,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: ♻️ 自动选择
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+
+  - name: 🚀 手动切换
+    type: select
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+
+  - name: ⚖️ 负载均衡
+    type: load-balance
+    strategy: consistent-hashing
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+
+  - name: 🗺️ 订阅更新
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+    
+  - name: 🎯 直连地址
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: 🐟 漏网之鱼
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 🛑 广告拦截
+    type: select
+    proxies:  [REJECT,DIRECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: 🎮 游戏平台
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 🕶 Github
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 📲 电报消息
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 💬 OpenAi
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 📹 油管视频
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 📺 巴哈姆特
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 🌍 国外媒体
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 🩸 Hentai
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 🎓 Pixiv
+    type: select
+    proxies:  [🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 🎥 奈飞视频
+    type: select
+    proxies:  [🎥 奈飞节点,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡,DIRECT,REJECT]
+
+  - name: 🎥 奈飞节点
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+    filter: "(NF|奈飞|解锁|Netflix|NETFLIX|Media)"
+
+  - name: 📺 哔哩哔哩
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: 🌏 国内媒体
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: 📢 谷歌FCM
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: Ⓜ️ 微软Bing
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: Ⓜ️ 微软云盘
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: Ⓜ️ 微软服务
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  - name: 🍎 苹果服务
+    type: select
+    proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
+
+  #分隔,下面是地区分组
+  - name: 🇭🇰 香港
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+    filter: "(?i)港|hk|hongkong|hong kong"
+
+  - name: 🇹🇼 台湾
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+    filter: "(?i)台|tw|taiwan"
+
+  - name: 🇯🇵 日本
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+    filter: "(?i)日|jp|japan"
+
+  - name: 🇺🇲 美国
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+    filter: "(?i)美|us|unitedstates|united states"
+
+  - name: 🇸🇬 新加坡
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+    filter: "(?i)(新|sg|singapore)"
+
+  - name: 其它地区
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 1000
+    lazy: true
+    include-all: true
+    exclude-filter: "DNS|TEMP"
+    filter: "(?i)^(?!.*(?:🇭🇰|🇯🇵|🇺🇸|🇸🇬|🇨🇳|港|hk|hongkong|台|tw|taiwan|日|jp|japan|新|sg|singapore|美|us|unitedstates)).*"
+
+
+rules:
+  - DST-PORT,53,DNS
+  - RULE-SET,private_ip,DIRECT,no-resolve
+  - RULE-SET,private_domain,DIRECT
+####自定义规则
+  - DOMAIN-SUFFIX,otaku-plan.com,🎯 直连地址
+  - DOMAIN-SUFFIX,x.com,🚀 节点选择
+####规则集
+  - RULE-SET,china-apps,🎯 直连地址
+  - RULE-SET,china-games,🎯 直连地址
+  
+  - RULE-SET,github_domain,🕶 Github
+  - RULE-SET,twitter_domain,🌍 国外媒体
+  - RULE-SET,youtube_domain,📹 油管视频
+  - RULE-SET,google_domain,🚀 节点选择
+  - RULE-SET,telegram_domain,📲 电报消息
+  - RULE-SET,netflix_domain,🎥 奈飞视频
+  - RULE-SET,bilibili_domain,📺 哔哩哔哩
+  - RULE-SET,bahamut_domain,📺 巴哈姆特
+  - RULE-SET,ehentai_domain,🩸 Hentai
+  - RULE-SET,openai_domain,💬 OpenAi
+  - RULE-SET,pixiv_domain,🎓 Pixiv
+  - RULE-SET,onedrive_domain,Ⓜ️ 微软云盘
+  - RULE-SET,microsoft_domain,Ⓜ️ 微软服务
+  - RULE-SET,bing_domain,Ⓜ️ 微软Bing
+  - RULE-SET,spotify_domain,🌍 国外媒体
+  - RULE-SET,googlefcm_domain,📢 谷歌FCM
+  
+  - RULE-SET,google@cn_domain,🎯 直连地址
+  - RULE-SET,steam@cn_domain,🎯 直连地址
+  - RULE-SET,epicgames@cn_domain,🎯 直连地址
+  - RULE-SET,steam_domain,🎮 游戏平台
+  - RULE-SET,epicgames_domain,🎮 游戏平台
+  
+  - RULE-SET,AWAvenue_Ads_Rule_domain,🛑 广告拦截
+  - RULE-SET,cn_domain,🎯 直连地址
+  
+  - RULE-SET,geolocation-!cn,🐟 漏网之鱼
+  
+  - RULE-SET,google_ip,🚀 节点选择
+  - RULE-SET,netflix_ip,🎥 奈飞视频
+  - RULE-SET,telegram_ip,📲 电报消息
+  - RULE-SET,twitter_ip,🌍 国外媒体
+  
+  - RULE-SET,ad_ip,🛑 广告拦截
+  - RULE-SET,cn_ip,🎯 直连地址
+
+  - MATCH,🐟 漏网之鱼
+  
+rule-anchor:
+  ip: &ip
+    type: http
+    interval: 86400
+    proxy: 🗺️ 订阅更新
+    behavior: ipcidr
+    format: text
+    
+  domain: &domain
+   type: http
+   interval: 86400
+   proxy: 🗺️ 订阅更新
+   behavior: domain
+   format: text    
+   
+  classical: &classical
+   type: http
+   interval: 86400
+   proxy: 🗺️ 订阅更新
+   behavior: classical
+   format: yaml
+  
+rule-providers:
+
+  private_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.list"
+  cn_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.list"
+  telegram_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.list"
+  netflix_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.list"
+  bilibili_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili.list"
+  bahamut_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bahamut.list"
+  github_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.list"
+  ehentai_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ehentai.list"
+  twitter_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/twitter.list"
+  youtube_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.list"
+  google_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.list"
+  spotify_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.list"
+  pixiv_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/pixiv.list"
+  openai_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/openai.list"
+  onedrive_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/onedrive.list"
+  microsoft_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.list"
+  bing_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bing.list"
+  steam_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/steam.list"
+  epicgames_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/epicgames.list"
+  
+  
+  googlefcm_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/googlefcm.list"
+    
+  steam@cn_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/steam@cn.list"
+  epicgames@cn_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/epicgames@cn.list"
+  google@cn_domain:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google@cn.list"
+    
+    
+  china-apps:
+     <<: *classical
+     url: "https://raw.githubusercontent.com/mnixry/direct-android-ruleset/rules/@Merged/APP.mutated.yaml"
+  china-games:
+     <<: *classical
+     url: "https://raw.githubusercontent.com/mnixry/direct-android-ruleset/rules/@Merged/GAME.mutated.yaml"
+     
+     
+    
+  AWAvenue_Ads_Rule_domain:
+    type: http
+    behavior: domain
+    format: yaml
+    url: "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main//Filters/AWAvenue-Ads-Rule-Clash.yaml"
+    interval: 86400
+    
+########################
+  google_ip:
+    <<: *ip
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.list"
+  private_ip:
+    <<: *ip
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/private.list"
+  netflix_ip:
+    <<: *ip
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.list"
+  twitter_ip:
+    <<: *ip
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/twitter.list"
+  telegram_ip:
+    <<: *ip
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.list"
+  geolocation-!cn:
+    <<: *domain
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.list"
+  cn_ip:
+    <<: *ip
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.list"
+    
+  ad_ip:
+    <<: *ip
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/ad.list"
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+
+  var builtinTemplate = document.getElementById("builtin-template").textContent;
+  builtinTemplate = builtinTemplate.replace(/^\r?\n/, "").replace(/\r?\n$/, "");
+
+  // Shared pure logic for the subscription-config generator.
+// This file is BOTH:
+//   - imported by build/selftest.mjs (Node, verified by tests), and
+//   - inlined verbatim into index.html by build/build.mjs (browser runtime).
+// Keeping a single source guarantees the tested code == shipped code.
+
+function countLines(s) {
+  if (!s) { return 0; }
+  var lines = s.split(/\r?\n/);
+  if (lines.length && lines[lines.length - 1] === "") { lines.pop(); }
+  return lines.length;
+}
+
+function yamlString(s) {
+  return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+}
+
+// Bare key when safe, otherwise a quoted scalar (valid YAML mapping key).
+function yamlKey(s) {
+  if (/^[A-Za-z0-9_\-.\u4e00-\u9fa5]+$/.test(s)) { return s; }
+  return yamlString(s);
+}
+
+// Does the template define the `&p` anchor used by `<<: *p`?
+function hasAnchor(template) {
+  return /(^|[\s])&p\b/m.test(template);
+}
+
+var FALLBACK_PROPS = [
+  "    type: http",
+  "    interval: 86400",
+  "    proxy: \uD83D\uDDFA\uFE0F \u8ba2\u9605\u66f4\u65b0",
+  "    header:",
+  "        User-Agent:",
+  '          - "clash-verge/v2.2.8"',
+  "    health-check:",
+  "        enable: true",
+  "        url: http://www.gstatic.com/generate_204",
+  "        interval: 18000",
+  "        timeout: 2000",
+  "        lazy: true",
+  '    exclude-filter: "\u5269\u4f59|\u94fe\u63a5|\u8fde\u63a5|\u57df\u540d|\u5b98\u7f51|\u7f51\u7ad9|\u5230\u671f|\u8fc7\u671f|\u91cd\u7f6e|\u90ae\u7bb1"'
+];
+
+// Build the replacement `proxy-providers:` YAML block (array of lines).
+function buildProvidersBlock(list, useAnchor) {
+  var out = ["proxy-providers:"];
+  list.forEach(function (p) {
+    out.push("  " + yamlKey(p.name) + ":");
+    if (useAnchor) {
+      out.push("    <<: *p");
+    } else {
+      out.push.apply(out, FALLBACK_PROPS);
+    }
+    out.push("    url: " + yamlString(p.url));
+    out.push("");
+  });
+  return out;
+}
+
+// Replace the top-level `proxy-providers:` block in `template`, leaving the
+// rest of the document byte-identical. Returns the new document as a string.
+function injectProviders(template, list) {
+  var nl = template.indexOf("\r\n") !== -1 ? "\r\n" : "\n";
+  var lines = template.split(/\r?\n/);
+
+  var start = -1;
+  for (var i = 0; i < lines.length; i++) {
+    if (/^proxy-providers:\s*(#.*)?$/.test(lines[i])) { start = i; break; }
+  }
+  if (start === -1) {
+    throw new Error("\u6a21\u677f\u4e2d\u672a\u627e\u5230\u9876\u5c42\u952e proxy-providers:\uff0c\u65e0\u6cd5\u6ce8\u5165\u3002");
+  }
+
+  var end = lines.length;
+  for (var j = start + 1; j < lines.length; j++) {
+    var l = lines[j];
+    if (/^[^\s#]/.test(l) && /^[^\s#][^:]*:/.test(l)) { end = j; break; }
+  }
+
+  var block = buildProvidersBlock(list, hasAnchor(template));
+  var merged = lines.slice(0, start).concat(block, lines.slice(end));
+  return merged.join(nl);
+}
+
+// Validate a raw list of {name,url}. Blank rows are skipped; returns
+// {list, errs} where list are the usable entries.
+function validateProviders(providers) {
+  var list = [];
+  var errs = [];
+  var seen = {};
+
+  providers.forEach(function (p, i) {
+    var name = (p.name || "").trim();
+    var url = (p.url || "").trim();
+    if (!name && !url) { return; }
+
+    var no = i + 1;
+    if (!name) { errs.push("\u7b2c " + no + " \u884c\uff1a\u8ba2\u9605\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a\u3002"); return; }
+    if (!url) { errs.push("\u7b2c " + no + " \u884c\uff08" + name + "\uff09\uff1a\u8ba2\u9605\u94fe\u63a5\u4e0d\u80fd\u4e3a\u7a7a\u3002"); return; }
+    if (seen[name]) { errs.push("\u8ba2\u9605\u540d\u79f0\u91cd\u590d\uff1a" + name + "\u3002"); return; }
+    seen[name] = true;
+
+    list.push({ name: name, url: url });
+  });
+
+  if (list.length === 0 && errs.length === 0) {
+    errs.push("\u8bf7\u81f3\u5c11\u6dfb\u52a0\u4e00\u6761\u8ba2\u9605\uff08\u540d\u79f0 + \u94fe\u63a5\uff09\u3002");
+  }
+  return { list: list, errs: errs };
+}
+
+  // ---- 状态 ----
+  var idSeq = 0;
+  var providers = [];
+  var tplMode = "builtin";
+  var uploadedTemplate = null;
+  var lastOutput = "";
+
+  // ---- 模板来源 ----
+  function currentTemplate() {
+    return tplMode === "upload" ? uploadedTemplate : builtinTemplate;
+  }
+
+  function setMode(mode) {
+    tplMode = mode;
+    $("#tpl-builtin").classList.toggle("active", mode === "builtin");
+    $("#tpl-upload").classList.toggle("active", mode === "upload");
+    $("#file-drop").style.display = mode === "upload" ? "flex" : "none";
+    updateTplHint();
+  }
+
+  function updateTplHint() {
+    var hint = $("#tpl-hint");
+    if (tplMode === "upload" && uploadedTemplate) {
+      hint.textContent = "已载入自定义模板 (" + countLines(uploadedTemplate) + " 行)";
+    } else if (tplMode === "upload") {
+      hint.textContent = "尚未选择文件";
+    } else {
+      hint.textContent = "内置 · " + countLines(builtinTemplate) + " 行";
+    }
+  }
+
+  // ---- 订阅列表渲染 ----
+  function addProvider(name, url) {
+    providers.push({ id: ++idSeq, name: name || "", url: url || "" });
+    renderProviders();
+  }
+
+  function removeProvider(id) {
+    providers = providers.filter(function (p) { return p.id !== id; });
+    renderProviders();
+  }
+
+  var TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';
+
+  function renderProviders() {
+    var list = $("#provider-list");
+    list.innerHTML = "";
+    providers.forEach(function (p, i) {
+      var row = document.createElement("div");
+      row.className = "provider";
+
+      var name = document.createElement("input");
+      name.type = "text";
+      name.className = "name-input";
+      name.placeholder = "名称，如 custom_name" + (i + 1);
+      name.value = p.name;
+      name.spellcheck = false;
+      name.addEventListener("input", function () { p.name = name.value; });
+
+      var url = document.createElement("input");
+      url.type = "url";
+      url.className = "url-input";
+      url.placeholder = "https://example.com/subscribe?token=xxx";
+      url.value = p.url;
+      url.spellcheck = false;
+      url.addEventListener("input", function () { p.url = url.value; });
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "icon-btn";
+      del.title = "删除";
+      del.innerHTML = TRASH_SVG;
+      del.addEventListener("click", function () { removeProvider(p.id); });
+
+      row.appendChild(name);
+      row.appendChild(url);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+    $("#provider-count").textContent = providers.length + " 条";
+  }
+
+  function showMsg(type, text) {
+    var el = $("#msg");
+    el.className = "msg " + type;
+    el.textContent = text;
+  }
+
+  function setOutputState(enabled) {
+    $("#copy").disabled = !enabled;
+    $("#download").disabled = !enabled;
+    if (!enabled) { $("#output").value = ""; $("#out-stat").textContent = "尚未生成"; }
+  }
+
+  // ---- 生成 ----
+  function onGenerate() {
+    var collected = validateProviders(providers);
+    if (collected.errs.length) {
+      showMsg("error", collected.errs.join(" "));
+      setOutputState(false);
+      return;
+    }
+
+    var template = currentTemplate();
+    if (!template) {
+      showMsg("error", "请先选择一份模板文件。");
+      setOutputState(false);
+      return;
+    }
+
+    var output;
+    try {
+      output = injectProviders(template, collected.list);
+    } catch (e) {
+      showMsg("error", e.message);
+      setOutputState(false);
+      return;
+    }
+
+    lastOutput = output;
+    $("#output").value = output;
+    setOutputState(true);
+
+    var warnings = [];
+    collected.list.forEach(function (p) {
+      if (!/^https?:\/\//i.test(p.url)) { warnings.push("链接 " + p.name + " 不是 http(s) 开头"); }
+    });
+    var stat = collected.list.length + " 条订阅 · " + countLines(output) + " 行";
+    if (warnings.length) {
+      showMsg("warn", "已生成（" + stat + "）。注意：" + warnings.join("；") + "。");
+    } else {
+      showMsg("ok", "已生成 · " + stat + "。");
+    }
+    $("#out-stat").textContent = stat;
+  }
+
+  // ---- 下载 / 复制 ----
+  function onDownload() {
+    if (!lastOutput) { return; }
+    var name = ($("#filename").value || "config.yaml").trim() || "config.yaml";
+    var blob = new Blob([lastOutput], { type: "text/yaml;charset=utf-8" });
+    var href = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(href); }, 1500);
+  }
+
+  function onCopy() {
+    if (!lastOutput) { return; }
+    var done = function () { flashCopy("已复制"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastOutput).then(done, function () { legacyCopy(done); });
+    } else {
+      legacyCopy(done);
+    }
+  }
+  function legacyCopy(done) {
+    var ta = $("#output");
+    ta.removeAttribute("readonly");
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { /* ignore */ }
+    ta.setAttribute("readonly", "readonly");
+    if (window.getSelection) { window.getSelection().removeAllRanges(); }
+  }
+  function flashCopy(text) {
+    var btn = $("#copy");
+    var old = btn.textContent;
+    btn.textContent = text;
+    setTimeout(function () { btn.textContent = old; }, 1200);
+  }
+
+  // ---- 文件上传 ----
+  function onFile(ev) {
+    var file = ev.target.files && ev.target.files[0];
+    if (!file) { return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      uploadedTemplate = String(reader.result);
+      $("#file-drop").classList.add("has-file");
+      $("#file-label").textContent = "已载入：" + file.name + "（" + countLines(uploadedTemplate) + " 行）";
+      updateTplHint();
+    };
+    reader.readAsText(file);
+  }
+
+  // ---- 事件绑定 ----
+  $("#tpl-builtin").addEventListener("click", function () { setMode("builtin"); });
+  $("#tpl-upload").addEventListener("click", function () { setMode("upload"); });
+  $("#file-btn").addEventListener("click", function (e) { e.stopPropagation(); $("#file-input").click(); });
+  $("#file-drop").addEventListener("click", function () { $("#file-input").click(); });
+  $("#file-input").addEventListener("change", onFile);
+  $("#add-provider").addEventListener("click", function () { addProvider("custom_name" + (providers.length + 1), ""); });
+  $("#generate").addEventListener("click", onGenerate);
+  $("#download").addEventListener("click", onDownload);
+  $("#copy").addEventListener("click", onCopy);
+
+  // ---- 初始化 ----
+  addProvider("custom_name1", "");
+  addProvider("custom_name2", "");
+  setMode("builtin");
+  setOutputState(false);
+})();
+</script>
+</body>
+</html>
