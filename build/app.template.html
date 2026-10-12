@@ -55,13 +55,15 @@
     margin-bottom:18px;
     box-shadow:0 1px 0 rgba(255,255,255,.02) inset, 0 12px 30px -18px rgba(0,0,0,.75);
   }
-  .card-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+  .card-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px;flex-wrap:wrap}
   .card-head h2{font-size:14.5px;margin:0;font-weight:600;letter-spacing:.3px}
   .card-head .idx{
     font-family:var(--mono);font-size:11px;color:var(--accent);
     border:1px solid var(--border-strong);border-radius:6px;padding:1px 7px;
   }
   .card-head .hint{color:var(--muted-2);font-size:12px;margin-left:auto}
+  .card-head .btn{display:inline-block}
+  .card-head .btn svg{vertical-align:-2px;margin-right:7px}
   label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px}
   input[type=text],input[type=url],textarea{
     width:100%;background:#0a111c;border:1px solid var(--border);color:var(--text);
@@ -70,6 +72,12 @@
   }
   input::placeholder,textarea::placeholder{color:var(--muted-2)}
   input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,139,255,.18)}
+  select{
+    background:#0a111c;border:1px solid var(--border);color:var(--text);border-radius:10px;
+    padding:11px 13px;font-size:13.5px;font-family:var(--sans);outline:none;cursor:pointer;
+    transition:border-color .15s, box-shadow .15s, background .15s;
+  }
+  select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,139,255,.18)}
   .seg{display:inline-flex;background:#0a111c;border:1px solid var(--border);border-radius:11px;padding:4px;gap:4px;flex-wrap:wrap}
   .seg button{
     appearance:none;border:0;background:transparent;color:var(--muted);
@@ -87,6 +95,15 @@
   }
   .provider input{background:#060c15}
   .provider .name-input{font-family:var(--mono);font-size:12.5px}
+  .provider.rule-row{grid-template-columns:1fr auto}
+  .provider.rule-row .url-input{font-family:var(--mono);font-size:12.5px}
+  .rb-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .rb-row > select{flex:0 0 auto;max-width:200px}
+  #rule-builder .rb-grow{flex:1 1 140px;min-width:0;width:auto}
+  .rb-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);white-space:nowrap;cursor:pointer}
+  #rule-builder.custom-mode #rule-policy,
+  #rule-builder.custom-mode #rule-policy-custom,
+  #rule-builder.custom-mode .rb-chk{display:none}
   .icon-btn{
     appearance:none;border:1px solid var(--border);background:#0a111c;color:var(--muted);
     width:38px;height:38px;border-radius:10px;cursor:pointer;display:grid;place-items:center;
@@ -192,10 +209,44 @@
       </div>
     </section>
 
-    <!-- 3. 生成 -->
+    <!-- 3. 自定义规则 -->
     <section class="card">
       <div class="card-head">
         <span class="idx">03</span>
+        <h2>自定义规则</h2>
+        <span class="hint">插入到 rules: 之后 · 优先级最高</span>
+        <button type="button" class="btn" id="add-rule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          添加规则
+        </button>
+        <button type="button" class="btn" id="rule-build">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          结构化添加
+        </button>
+      </div>
+      <div class="rb-row" id="rule-builder">
+        <select id="rule-type" aria-label="规则类型"></select>
+        <input type="text" id="rule-value" class="rb-grow" placeholder="值，如 google.com 或 1.2.3.4/24" spellcheck="false">
+        <select id="rule-policy" aria-label="策略组"></select>
+        <input type="text" id="rule-policy-custom" class="rb-grow" placeholder="自定义策略组名称" spellcheck="false" style="display:none">
+        <label class="rb-chk" title="匹配目标IP时跳过 DNS 解析（仅目标IP规则适用）"><input type="checkbox" id="rule-no-resolve"> no-resolve</label>
+        <label class="rb-chk" title="将目标IP匹配转为来源IP匹配（仅目标IP规则适用）"><input type="checkbox" id="rule-src"> src</label>
+      </div>
+      <div class="provider-list" id="rule-list"></div>
+      <div class="row-base">
+        <span class="spacer"></span>
+        <span class="stat" id="rule-count">0 条</span>
+      </div>
+      <p class="note">
+        每行一条规则（如 <code>DOMAIN-SUFFIX,google.com,🚀 节点选择</code>）；生成时会插入到顶层 <code>rules:</code> 正下方
+        （优先级最高，会排在 <code>DST-PORT,53,DNS</code> 等规则之前）；模板必须含顶层 <code>rules:</code> 键。
+      </p>
+    </section>
+
+    <!-- 4. 生成 -->
+    <section class="card">
+      <div class="card-head">
+        <span class="idx">04</span>
         <h2>生成与导出</h2>
       </div>
       <div class="toolbar">
@@ -244,7 +295,9 @@
 
   // ---- 状态 ----
   var idSeq = 0;
+  var ruleIdSeq = 0;
   var providers = [];
+  var rules = [];
   var tplMode = "builtin";
   var uploadedTemplate = null;
   var lastOutput = "";
@@ -260,6 +313,7 @@
     $("#tpl-upload").classList.toggle("active", mode === "upload");
     $("#file-drop").style.display = mode === "upload" ? "flex" : "none";
     updateTplHint();
+    refreshRulePolicies();
   }
 
   function updateTplHint() {
@@ -324,6 +378,123 @@
     $("#provider-count").textContent = providers.length + " 条";
   }
 
+  // ---- 自定义规则 ----
+  function addRule(text) {
+    rules.push({ id: ++ruleIdSeq, text: text || "" });
+    renderRules();
+  }
+
+  function removeRule(id) {
+    rules = rules.filter(function (r) { return r.id !== id; });
+    renderRules();
+  }
+
+  function renderRules() {
+    var list = $("#rule-list");
+    list.innerHTML = "";
+    rules.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "provider rule-row";
+
+      var input = document.createElement("input");
+      input.type = "text";
+      input.className = "url-input";
+      input.placeholder = "DOMAIN-SUFFIX,google.com,🚀 节点选择";
+      input.value = r.text;
+      input.spellcheck = false;
+      input.addEventListener("input", function () { r.text = input.value; });
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "icon-btn";
+      del.title = "删除";
+      del.innerHTML = TRASH_SVG;
+      del.addEventListener("click", function () { removeRule(r.id); });
+
+      row.appendChild(input);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+    $("#rule-count").textContent = rules.length + " 条";
+  }
+
+  function fillRuleTypes() {
+    var sel = $("#rule-type");
+    sel.innerHTML = "";
+    RULE_TYPES.forEach(function (t) {
+      var opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      sel.appendChild(opt);
+    });
+    var custom = document.createElement("option");
+    custom.value = "__custom__";
+    custom.textContent = "自定义…";
+    sel.appendChild(custom);
+  }
+
+  function toggleRulePolicyCustom(show) {
+    $("#rule-policy-custom").style.display = show ? "" : "none";
+  }
+
+  function refreshRulePolicies() {
+    var sel = $("#rule-policy");
+    var prev = sel.value;
+    sel.innerHTML = "";
+
+    var names = [];
+    RULE_POLICIES_FIXED.forEach(function (p) {
+      if (names.indexOf(p) === -1) { names.push(p); }
+    });
+    var tpl = currentTemplate();
+    if (tpl) {
+      var extracted = [];
+      try { extracted = extractPolicies(tpl) || []; } catch (e) { extracted = []; }
+      extracted.forEach(function (p) {
+        if (names.indexOf(p) === -1) { names.push(p); }
+      });
+    }
+
+    names.forEach(function (p) {
+      var opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p;
+      sel.appendChild(opt);
+    });
+    var custom = document.createElement("option");
+    custom.value = "__custom__";
+    custom.textContent = "自定义…";
+    sel.appendChild(custom);
+
+    if (prev && names.indexOf(prev) !== -1) { sel.value = prev; }
+    toggleRulePolicyCustom(sel.value === "__custom__");
+  }
+
+  function ruleOptsString() {
+    var opts = [];
+    if ($("#rule-no-resolve").checked) { opts.push("no-resolve"); }
+    if ($("#rule-src").checked) { opts.push("src"); }
+    return opts.join(",");
+  }
+
+  function toggleRuleFields() {
+    $("#rule-builder").classList.toggle("custom-mode", $("#rule-type").value === "__custom__");
+  }
+
+  function onRuleBuild() {
+    var type = $("#rule-type").value;
+    var value = $("#rule-value").value.trim();
+    if (type === "__custom__") {
+      if (!value) { showMsg("warn", "请填写完整规则内容。"); return; }
+      addRule(value);
+      return;
+    }
+    if (!value) { showMsg("warn", "请填写规则值。"); return; }
+    var policySel = $("#rule-policy");
+    var policy = policySel.value === "__custom__" ? $("#rule-policy-custom").value : policySel.value;
+    addRule(composeRule(type, value, policy, ruleOptsString()));
+  }
+
   function showMsg(type, text) {
     var el = $("#msg");
     el.className = "msg " + type;
@@ -361,6 +532,23 @@
       return;
     }
 
+    var ruleCollected = validateRules(rules);
+    if (ruleCollected.errs.length) {
+      showMsg("error", ruleCollected.errs.join(" "));
+      setOutputState(false);
+      return;
+    }
+    var customRuleCount = ruleCollected.list.length;
+    if (customRuleCount > 0) {
+      try {
+        output = injectRules(output, ruleCollected.list);
+      } catch (e) {
+        showMsg("error", e.message);
+        setOutputState(false);
+        return;
+      }
+    }
+
     lastOutput = output;
     $("#output").value = output;
     setOutputState(true);
@@ -370,6 +558,7 @@
       if (!/^https?:\/\//i.test(p.url)) { warnings.push("链接 " + p.name + " 不是 http(s) 开头"); }
     });
     var stat = collected.list.length + " 条订阅 · " + countLines(output) + " 行";
+    if (customRuleCount > 0) { stat += " · " + customRuleCount + " 条自定义规则"; }
     if (warnings.length) {
       showMsg("warn", "已生成（" + stat + "）。注意：" + warnings.join("；") + "。");
     } else {
@@ -427,6 +616,7 @@
       $("#file-drop").classList.add("has-file");
       $("#file-label").textContent = "已载入：" + file.name + "（" + countLines(uploadedTemplate) + " 行）";
       updateTplHint();
+      refreshRulePolicies();
     };
     reader.readAsText(file);
   }
@@ -438,6 +628,10 @@
   $("#file-drop").addEventListener("click", function () { $("#file-input").click(); });
   $("#file-input").addEventListener("change", onFile);
   $("#add-provider").addEventListener("click", function () { addProvider("custom_name" + (providers.length + 1), ""); });
+  $("#add-rule").addEventListener("click", function () { addRule(""); });
+  $("#rule-type").addEventListener("change", toggleRuleFields);
+  $("#rule-policy").addEventListener("change", function () { toggleRulePolicyCustom($("#rule-policy").value === "__custom__"); });
+  $("#rule-build").addEventListener("click", onRuleBuild);
   $("#generate").addEventListener("click", onGenerate);
   $("#download").addEventListener("click", onDownload);
   $("#copy").addEventListener("click", onCopy);
@@ -445,7 +639,11 @@
   // ---- 初始化 ----
   addProvider("custom_name1", "");
   addProvider("custom_name2", "");
+  fillRuleTypes();
+  renderRules();
   setMode("builtin");
+  refreshRulePolicies();
+  toggleRuleFields();
   setOutputState(false);
 })();
 </script>

@@ -109,3 +109,103 @@ export function validateProviders(providers) {
   }
   return { list: list, errs: errs };
 }
+
+// Supported mihomo/Clash rule types shown in the rule-type selector.
+export var RULE_TYPES = ["DOMAIN","DOMAIN-SUFFIX","DOMAIN-KEYWORD","DOMAIN-REGEX","GEOSITE","IP-CIDR","IP-CIDR6","IP-SUFFIX","GEOIP","SRC-IP-CIDR","SRC-PORT","DST-PORT","PROCESS-NAME","PROCESS-PATH","RULE-SET","MATCH"];
+
+// Fixed policies always offered in addition to the template's proxy-groups.
+export var RULE_POLICIES_FIXED = ["DIRECT","REJECT","PROXY"];
+
+// Collect proxy-group names from a template, in document order, de-duplicated.
+export function extractPolicies(template) {
+  var out = [];
+  var seen = {};
+  var lines = String(template == null ? "" : template).split(/\r?\n/);
+
+  lines.forEach(function (line) {
+    var m = line.match(/^\s*-\s*name:\s*(.+?)\s*$/);
+    if (!m) { return; }
+    var name = m[1].trim();
+    if (!name || seen[name]) { return; }
+    seen[name] = true;
+    out.push(name);
+  });
+
+  return out;
+}
+
+// Join a rule's parts into a single comma-separated mihomo rule string.
+// Empty type => treat value as a raw rule; empty value => empty string.
+export function composeRule(type, value, policy, opts) {
+  var t = String(type == null ? "" : type).trim();
+  var v = String(value == null ? "" : value).trim();
+  if (v === "") { return ""; }
+  if (t === "") { return v; }
+
+  var p = String(policy == null ? "" : policy).trim();
+  var o = String(opts == null ? "" : opts).trim();
+
+  var parts = [t, v];
+  if (p !== "") { parts.push(p); }
+  if (o !== "") { parts.push(o); }
+  return parts.join(",");
+}
+
+// Trim rule rows, drop blanks, and flag exact duplicates (after trim).
+// Returns { list, errs }; list preserves order and excludes the duplicates.
+export function validateRules(rules) {
+  var list = [];
+  var errs = [];
+  var seen = {};
+
+  (rules || []).forEach(function (entry) {
+    var rule = String(entry == null ? "" : entry).trim();
+    if (!rule) { return; }
+    if (seen[rule]) { errs.push("\u91cd\u590d\u89c4\u5219\uff1a" + rule + "\u3002"); return; }
+    seen[rule] = true;
+    list.push(rule);
+  });
+
+  return { list: list, errs: errs };
+}
+
+// Inject custom rules just below the top-level `rules:` key, leaving the rest
+// of the document byte-identical. No-op when `rules` is empty.
+export function injectRules(template, rules) {
+  if (!rules || rules.length === 0) { return template; }
+
+  var nl = template.indexOf("\r\n") !== -1 ? "\r\n" : "\n";
+  var lines = template.split(/\r?\n/);
+
+  // Prefer the first bare `rules:` line; otherwise accept an inline empty list.
+  var target = -1;
+  var inline = false;
+  for (var i = 0; i < lines.length; i++) {
+    if (/^rules:\s*(#.*)?$/.test(lines[i])) { target = i; inline = false; break; }
+    if (/^rules:\s*\[\s*\]\s*(#.*)?$/.test(lines[i])) { target = i; inline = true; break; }
+  }
+  if (target === -1) {
+    throw new Error("\u6a21\u677f\u4e2d\u672a\u627e\u5230\u9876\u5c42\u952e rules:\uff0c\u65e0\u6cd5\u6ce8\u5165\u81ea\u5b9a\u4e49\u89c4\u5219\u3002");
+  }
+
+  var outLines = lines.slice();
+  if (inline) {
+    var im = lines[target].match(/^rules:\s*\[\s*\]\s*(#.*)?$/);
+    outLines[target] = im && im[1] ? "rules: " + im[1] : "rules:";
+  }
+
+  // Indent follows the first existing list item after the rules line.
+  var indent = "  ";
+  for (var k = target + 1; k < lines.length; k++) {
+    var dm = lines[k].match(/^(\s+)-\s/);
+    if (dm) { indent = dm[1]; break; }
+  }
+
+  var ruleLines = [];
+  rules.forEach(function (r) {
+    ruleLines.push(indent + "- " + String(r).trim());
+  });
+
+  var merged = outLines.slice(0, target + 1).concat(ruleLines, outLines.slice(target + 1));
+  return merged.join(nl);
+}

@@ -11,6 +11,10 @@ import {
   yamlKey,
   validateProviders,
   countLines,
+  extractPolicies,
+  composeRule,
+  validateRules,
+  injectRules,
 } from "./core.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -127,6 +131,67 @@ console.log("injectProviders (fallback, no anchor)");
 
 console.log("injectProviders (missing key -> throws)");
 assertThrows("throws when proxy-providers absent", () => injectProviders("mode: rule\n", []));
+
+console.log("extractPolicies");
+{
+  var policies = extractPolicies(template);
+  check("includes 🚀 节点选择", policies.indexOf("🚀 节点选择") !== -1);
+  check("includes 🎯 直连地址", policies.indexOf("🎯 直连地址") !== -1);
+  check("includes 🐟 漏网之鱼", policies.indexOf("🐟 漏网之鱼") !== -1);
+  check("more than 10 policies", policies.length > 10);
+
+  var hasDup = false;
+  for (var pi = 0; pi < policies.length; pi++) {
+    if (policies.indexOf(policies[pi]) !== pi) { hasDup = true; break; }
+  }
+  check("no duplicate policies", hasDup === false);
+}
+
+console.log("composeRule");
+check("basic 3 comma parts", composeRule("DOMAIN-SUFFIX", "google.com", "🚀 节点选择", "") === "DOMAIN-SUFFIX,google.com,🚀 节点选择");
+check("with opts -> 4 comma parts", composeRule("IP-CIDR", "1.2.3.4/32", "DIRECT", "no-resolve").split(",").length === 4);
+check("empty policy -> 2 comma parts", composeRule("DOMAIN-SUFFIX", "google.com", "", "") === "DOMAIN-SUFFIX,google.com");
+
+console.log("validateRules");
+{
+  var vr = validateRules(["DOMAIN-SUFFIX,a.com,🚀 节点选择", "   ", "IP-CIDR,1.2.3.4/32,DIRECT", "", "DOMAIN-SUFFIX,a.com,🚀 节点选择"]);
+  check("skips blank/whitespace rows", vr.list.length === 2);
+  check("keeps original order", vr.list[0] === "DOMAIN-SUFFIX,a.com,🚀 节点选择" && vr.list[1] === "IP-CIDR,1.2.3.4/32,DIRECT");
+  check("detects duplicate (1 err)", vr.errs.length === 1 && /重复规则/.test(vr.errs[0]));
+  check("list excludes the duplicate", vr.list.indexOf("DOMAIN-SUFFIX,a.com,🚀 节点选择") === 0 && vr.list.lastIndexOf("DOMAIN-SUFFIX,a.com,🚀 节点选择") === 0);
+}
+
+console.log("injectRules (real template)");
+{
+  var userRules = ["DOMAIN-SUFFIX,a.com,🚀 节点选择", "IP-CIDR,1.2.3.4/32,DIRECT"];
+  var rout = injectRules(template, userRules);
+  var rl = rout.split("\n");
+  var tl = template.split("\n");
+
+  var ri = -1;
+  for (var a = 0; a < tl.length; a++) if (/^rules:\s*$/.test(tl[a])) { ri = a; break; }
+
+  check("first user rule is first list item after rules:", rl[ri + 1] === "  - " + userRules[0]);
+  check("both rule strings present", rout.indexOf(userRules[0]) !== -1 && rout.indexOf(userRules[1]) !== -1);
+  check("prefix up to and including rules: unchanged", rl.slice(0, ri + 1).join("\n") === tl.slice(0, ri + 1).join("\n"));
+  check("line count is original + rules.length", rl.length === tl.length + userRules.length);
+  check("suffix (original rules content) unchanged", rl.slice(ri + 1 + userRules.length).join("\n") === tl.slice(ri + 1).join("\n"));
+}
+
+console.log("injectRules (empty list -> unchanged)");
+check("empty list returns template byte-identical", injectRules(template, []) === template);
+
+console.log("injectRules (missing key -> throws)");
+assertThrows("throws when rules key absent", function () { injectRules("mode: rule\n", ["DOMAIN-SUFFIX,a.com,DIRECT"]); });
+
+console.log("injectRules (inline empty list)");
+{
+  var iout = injectRules("rules: []\nmode: rule\n", ["DOMAIN-SUFFIX,a.com,DIRECT"]);
+  var il = iout.split("\n");
+  check("inline list becomes bare rules:", il[0] === "rules:");
+  check("inserted rule follows rules: line", il[1] === "  - DOMAIN-SUFFIX,a.com,DIRECT");
+  check("rest of document unchanged", il[2] === "mode: rule");
+}
 
 console.log("\n" + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);
