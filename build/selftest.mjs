@@ -35,7 +35,7 @@ function assertThrows(name, fn) {
 
 console.log("template.yaml");
 check("has &p anchor", hasAnchor(template) === true);
-check("line count is 536", countLines(template) === 536);
+check("line count is 549", countLines(template) === 549);
 
 console.log("yamlString / yamlKey");
 check('yamlString basic', yamlString("https://a/b") === '"https://a/b"');
