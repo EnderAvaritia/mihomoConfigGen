@@ -284,14 +284,12 @@
 redir-port: 7891
 tproxy-port: 1536
 ipv6: true
-allow-lan: true
+allow-lan: false
 unified-delay: true
 tcp-concurrent: true
 external-controller: 127.0.0.1:9090
 external-ui: ui
 external-ui-url: "https://github.com/MetaCubeX/yacd/archive/gh-pages.zip"
-
-find-process-mode: always
 
 profile:
   store-selected: true
@@ -313,7 +311,7 @@ sniffer:
 
 tun:
   enable: false
-  stack: system
+  stack: gvisor
   device: meta
   dns-hijack:
     - "any:53"
@@ -354,11 +352,22 @@ dns:
 
   proxy-server-nameserver:
   # 代理节点域名解析服务器，仅用于解析代理节点的域名
-    - https://120.53.53.53/dns-query
     - https://223.5.5.5/dns-query
+    - https://120.53.53.53/dns-query
+    
     - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
+    
+    - 8.8.8.8
+    - 1.1.1.1
 
+    - https://poseidoh.com/jp6ru042k7/dns-query
+    - https://lingerdoh.com/b4n68sr46ae1/dns-query
+    
+    - https://api.edgequery.cc:40443/dns-query
+    - https://106.52.217.152:8443/dns-query
+    - https://111.31.95.15:8443/dns-query
+    - https://api.edgequery.net:40443/dns-query
     
   nameserver-policy:
   # 指定域名查询的解析服务器，可使用 geosite
@@ -368,54 +377,13 @@ dns:
       
 
   nameserver:
-    - 223.5.5.5 # 阿里DNS
-    - 180.76.76.76 # 百度DNS
-    - 119.29.29.29 # 腾讯DNS
-    #- 117.50.11.11 # ONE DNS拦截版 恶意网站拦截、广告过滤
-    #- 117.50.10.10 # ONE DNS纯净版 直接返回其真实的响应结果
-    #- 114.114.114.114 # 114DNS
-    
-    - 101.101.101.101
-    - 101.102.103.104
-    
-    - 8.8.8.8 # 谷歌DNS
-    - 1.1.1.1 # Cloudflare DNS
-    
-    - 2001:de4::101
-    - 2001:de4::102
-    - 2001:4860:4860::8888
-    - 2001:4860:4860::8844
-    - 2606:4700:4700::1111
-    - 2606:4700:4700::1001
-    
-    - 2001:b000:168::1
-    - 2001:b000:168::2
-    # HiNet 中华电信 DNS
-    
-    - "[2402:4e00::]"
-    - "[2402:4e00:1::]"
-    # 腾讯 DNS 
-    - 2400:3200::1
-    - 2400:3200:baba::1
-    # 阿里 DNS
-    
     - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
+    - https://doh.pub/dns-query
     
-  fallback:
-    - tls://dns.rubyfish.cn:853
-    - tls://1.0.0.1:853
-    - tls://dns.google:853
-    - https://dns.rubyfish.cn/dns-query
-    - https://cloudflare-dns.com/dns-query
-    - https://dns.google/dns-query
- #fallback-filter:
-    #geoip: true # 默认
-    #ipcidr: # 在这个网段内的 IP 地址会被考虑为被污染的 IP
-      #- 240.0.0.0/4
-
-#这里是订阅更新和延迟测试相关
-#可以更改 proxy 指定的出站
+    # - https://120.53.53.53/dns-query
+    # - https://dns.alidns.com/dns-query
+    
 p: &p 
     type: http
     interval: 86400
@@ -444,12 +412,10 @@ proxy-providers:
     <<: *p
     url: ""
 
-##########################################################################################################
 
 proxies:
   - name: "DNS"
     type: dns
-####应急使用的代理
   - name: "TEMP"
     type: socks5
     server: 127.0.0.1
@@ -578,7 +544,6 @@ proxy-groups:
     type: select
     proxies:  [DIRECT,REJECT,🚀 节点选择,🚀 手动切换,♻️ 自动选择,⚖️ 负载均衡,🇭🇰 香港,🇹🇼 台湾,🇯🇵 日本,🇺🇲 美国,🇸🇬 新加坡]
 
-  #分隔,下面是地区分组
   - name: 🇭🇰 香港
     type: url-test
     url: http://www.gstatic.com/generate_204
@@ -793,8 +758,6 @@ rule-providers:
   china-games:
      <<: *classical
      url: "https://raw.githubusercontent.com/mnixry/direct-android-ruleset/rules/@Merged/GAME.mutated.yaml"
-     
-     
     
   AWAvenue_Ads_Rule_domain:
     type: http
@@ -803,7 +766,6 @@ rule-providers:
     url: "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main//Filters/AWAvenue-Ads-Rule-Clash.yaml"
     interval: 86400
     
-########################
   google_ip:
     <<: *ip
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.list"
