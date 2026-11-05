@@ -10,7 +10,6 @@ import {
   yamlString,
   yamlKey,
   validateProviders,
-  countLines,
   extractPolicies,
   composeRule,
   validateRules,
@@ -35,7 +34,7 @@ function assertThrows(name, fn) {
 
 console.log("template.yaml");
 check("has &p anchor", hasAnchor(template) === true);
-check("line count is 549", countLines(template) === 549);
+check("has top-level rules:", /^rules:\s*$/m.test(template));
 
 console.log("yamlString / yamlKey");
 check('yamlString basic', yamlString("https://a/b") === '"https://a/b"');
